@@ -1,0 +1,25 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# yield_data
+
+This project aims to collect and analyze data from B3 stock index.
+
+```{r}
+data_sample <- read.csv("data/yield_data.csv",
+                        col.names = c("Symbol", "Year", "Stock Price", "Dividends", "Yield")) 
+
+knitr::kable(head(data_sample, 20), digits = 2)
+```
+
+
