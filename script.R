@@ -73,7 +73,7 @@ get_yearly_yield <- function(tickers, from = Sys.Date() - 30,
 }
 
 tictoc::tic()
-df <- get_yearly_yield(tickers[1:300], from = "2020-01-01") %>% 
+df <- get_yearly_yield(tickers[1:329], from = "2020-01-01") %>% 
   mutate(date = as.integer(date))
 tictoc::toc()
 
@@ -92,27 +92,25 @@ high_pay_tickers <- df %>%
 df %>%
   filter(symbol %in% high_pay_tickers) %>% 
   mutate(symbol = fct_reorder(symbol, -yield),
-         date = as.integer(date)) %>%  
+         date = factor(date)) %>%  
   ggplot(aes(date, yield)) +
-  geom_col() +
+  geom_col(fill = "#459b45") +
   facet_wrap(vars(symbol), scales = "free")
 
 
 df %>% 
   filter(symbol %in% high_pay_tickers) %>% 
   group_by(symbol) %>% 
-  summarize(last_yield = last(yield),
+  summarize(first_yield = first(yield),
+            last_yield = last(yield),
             diff_yield = last(yield) - first(yield)) %>% 
   arrange(desc(last_yield)) %>% 
   knitr::kable(digits = 2,
-               col.names = c("Symbol", "Last Yield", "Diff Yield"))
-  # gt::gt(rowname_col = "symbol") %>% 
-  # gt::fmt_number(
-  #   columns = 2:3,
-  #   decimals = 2,
-  #   drop_trailing_zeros = TRUE
-  # ) 
+               align = "c",
+               col.names = c("Symbol", "First Yield", "Last Yield", "Diff Yield"))
 
+
+df
 
 
 
