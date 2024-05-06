@@ -15,11 +15,6 @@ knitr::opts_chunk$set(
 
 This project aims to collect and analyze data from B3 stock index.
 
-```{r}
-data_sample <- read.csv("data/yield_data.csv",
-                        col.names = c("Symbol", "Year", "Stock Price", "Dividends", "Yield")) 
-
-knitr::kable(head(data_sample, 20), digits = 2)
-```
+![](maiores_yields.png)
 
 
