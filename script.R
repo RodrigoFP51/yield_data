@@ -102,7 +102,7 @@ df %>%
   facet_wrap(vars(symbol), scales = "free")
 
 
-df %>% 
+gt_table <- df %>% 
   filter(symbol %in% high_pay_tickers) %>% 
   group_by(symbol) %>% 
   summarize(first_yield = first(yield),
@@ -128,9 +128,15 @@ df %>%
     columns = "diff_yield",
     method = "numeric",
     palette = "YlGn"
-  )
+  ) %>% 
+  tab_header(
+    title = "Maiores pagadores de dividendos"
+  ) %>% 
+  tab_footnote("Dados: B3")
 
-df
+gtsave(gt_table,
+       filename = "maiores_yields.png")
+
 
 
 
