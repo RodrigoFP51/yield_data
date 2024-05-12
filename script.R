@@ -1,9 +1,9 @@
 library(tidyverse)
 library(tidyquant)
 library(rvest)
-library(plotly)
 library(here)
 library(gt)
+library(highcharter)
 
 if(!dir.exists("data")) dir.create("data")
 
@@ -18,6 +18,9 @@ tickers <- pag %>%
 
 # tickers <- c("PETR4", "VALE3", "ITUB4", "BBDC4", "B3SA3",
 #               "ABEV3", "LREN3", "CIEL3", "GGBR4", "WEGE3")
+
+
+# Function to collect data ------------------------------------------------
 
 get_yearly_yield <- function(tickers, from = Sys.Date() - 30,
                              to = Sys.Date()){
@@ -81,7 +84,7 @@ df %>%
   write_csv(here("data", "yield_data.csv"),
             col_names = TRUE,
             append = TRUE)
-
+  
 # df <-
 #   read_csv("data/yield_data.csv",
 #            col_names = c("symbol", "date", "stock_price", "dividend", "yield"))
@@ -97,9 +100,10 @@ high_pay_tickers <- df %>%
 df %>%
   filter(symbol %in% high_pay_tickers) %>% 
   mutate(symbol = fct_reorder(symbol, -yield)) %>%  
-  ggplot(aes(date, yield)) +
-  geom_area(fill = "#459b45", alpha = 0.4, color = "#45cf49") +
-  facet_wrap(vars(symbol), scales = "free")
+  hchart(
+    "line",
+    hcaes(date, yield, group = symbol)
+  )
 
 
 gt_table <- df %>% 
@@ -114,11 +118,11 @@ gt_table <- df %>%
   select(-c(min_date, max_date)) %>% 
   arrange(desc(diff_yield)) %>% 
   gt() %>% 
-  cols_label_with(
-    columns = everything(),
-    fn = \(x) x %>% 
-      str_replace("_", " ") %>% 
-      str_to_title()
+  cols_label(
+    symbol = "Ativo",
+    first_yield = "Primeiro",
+    last_yield = "Último",
+    diff_yield = "Diferença"
   ) %>% 
   fmt_percent(
     columns = everything(),
@@ -126,20 +130,20 @@ gt_table <- df %>%
   ) %>%
   data_color(
     columns = "diff_yield",
-    method = "numeric",
+    method  = "numeric",
     palette = "YlGn"
+  ) %>% 
+  tab_spanner(
+    label = md("**Dividendos**"),
+    columns = c(first_yield, last_yield)
   ) %>% 
   tab_header(
     title = "Maiores pagadores de dividendos"
   ) %>% 
-  tab_footnote("Dados: B3")
+  tab_footnote("Fonte: B3 API")
 
 gtsave(gt_table,
        filename = "maiores_yields.png")
-
-
-
-
 
 
 

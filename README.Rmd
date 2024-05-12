@@ -11,9 +11,10 @@ knitr::opts_chunk$set(
 )
 ```
 
-# yield_data
+# Dados de dividendo das empresas da B3
 
-This project aims to collect and analyze data from B3 stock index.
+Esse projeto visa coletar os dados de preços de ações e seus dividendos da empresas da B3.  
+Neste caso utilizou-se o pacote `tidyquant` como um facilitador para acessar os dados.
 
 ![](maiores_yields.png)
 
