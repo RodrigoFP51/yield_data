@@ -76,14 +76,13 @@ get_yearly_yield <- function(tickers, from = Sys.Date() - 30,
 }
 
 tictoc::tic()
-df <- get_yearly_yield(tickers[1:329], from = "2017-01-01") %>% 
+df <- get_yearly_yield(tickers, from = "2017-01-01") %>% 
   mutate(date = as.integer(date))
 tictoc::toc()
 
 df %>% 
   write_csv(here("data", "yield_data.csv"),
-            col_names = TRUE,
-            append = TRUE)
+            col_names = TRUE)
   
 # df <-
 #   read_csv("data/yield_data.csv",
@@ -91,11 +90,15 @@ df %>%
 
 high_pay_tickers <- df %>% 
   group_by(symbol) %>%
-  summarize(yield = mean(yield)) %>%
-  arrange(desc(yield)) %>% 
-  head(12) %>% 
+  filter(length(symbol) > 2) %>% 
+  reframe(
+    years_diff = last(date) - first(date),
+    diff_yield = yield - lag(yield, n = years_diff)
+  ) %>%  
+  ungroup() %>% 
+  drop_na() %>% 
+  slice_max(diff_yield, n = 20) %>% 
   pull(symbol)
-
 
 df %>%
   filter(symbol %in% high_pay_tickers) %>% 
@@ -104,7 +107,6 @@ df %>%
     "line",
     hcaes(date, yield, group = symbol)
   )
-
 
 gt_table <- df %>% 
   filter(symbol %in% high_pay_tickers) %>% 
@@ -118,6 +120,9 @@ gt_table <- df %>%
   select(-c(min_date, max_date)) %>% 
   arrange(desc(diff_yield)) %>% 
   gt() %>% 
+  cols_width(
+    symbol ~ pct(60)
+  ) %>% 
   cols_label(
     symbol = "Ativo",
     first_yield = "Primeiro",
@@ -126,7 +131,7 @@ gt_table <- df %>%
   ) %>% 
   fmt_percent(
     columns = everything(),
-    decimals = 3
+    decimals = 2
   ) %>%
   data_color(
     columns = "diff_yield",
@@ -138,7 +143,8 @@ gt_table <- df %>%
     columns = c(first_yield, last_yield)
   ) %>% 
   tab_header(
-    title = "Maiores pagadores de dividendos"
+    title = "Maiores pagadores de dividendos",
+    subtitle = "Considerando apenas ativos com mais de 2 anos de amostra"
   ) %>% 
   tab_footnote("Fonte: B3 API")
 

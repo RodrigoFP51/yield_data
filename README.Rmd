@@ -18,4 +18,3 @@ Neste caso utilizou-se o pacote `tidyquant` como um facilitador para acessar os 
 
 ![](maiores_yields.png)
 
-
