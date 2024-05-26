@@ -84,12 +84,12 @@ df %>%
   write_csv(here("data", "yield_data.csv"),
             col_names = TRUE)
   
-# df <-
-#   read_csv("data/yield_data.csv",
-#            col_names = c("symbol", "date", "stock_price", "dividend", "yield"))
+df <-
+  read_csv("data/yield_data.csv")
 
 high_pay_tickers <- df %>% 
   group_by(symbol) %>%
+  # filter out tickers that sample is less than 3 years
   filter(length(symbol) > 2) %>% 
   reframe(
     years_diff = last(date) - first(date),
@@ -111,17 +111,21 @@ df %>%
 gt_table <- df %>% 
   filter(symbol %in% high_pay_tickers) %>% 
   group_by(symbol) %>% 
-  summarize(first_yield = first(yield),
-            last_yield = last(yield),
-            diff_yield = last(yield) - first(yield),
-            min_date = min(date),
-            max_date = max(date)) %>% 
+  summarize(
+    first_yield = first(yield),
+    last_yield = last(yield),
+    diff_yield = last(yield) - first(yield),
+    min_date = min(date),
+    max_date = max(date),
+    first_dividend = first(dividends),
+    last_dividend = last(dividends)
+  ) %>%  
   mutate(symbol = str_glue("{symbol} ({min_date}-{max_date})")) %>% 
   select(-c(min_date, max_date)) %>% 
   arrange(desc(diff_yield)) %>% 
   gt() %>% 
   cols_width(
-    symbol ~ pct(60)
+    symbol ~ pct(30)
   ) %>% 
   cols_label(
     symbol = "Ativo",
@@ -130,16 +134,31 @@ gt_table <- df %>%
     diff_yield = "Diferença"
   ) %>% 
   fmt_percent(
-    columns = everything(),
+    columns = ends_with("_yield"),
     decimals = 2
   ) %>%
+  fmt_currency(
+    columns = ends_with("dividend"),
+    currency = "BRL",
+    decimals = 2,
+    drop_trailing_dec_mark = TRUE
+  ) %>% 
+  cols_merge(
+    columns = starts_with("first_"),
+    pattern = "{2} ({1})"
+  ) %>% 
+  cols_merge(
+    columns = starts_with("last_"),
+    pattern = "{2} ({1})"
+  ) %>% 
   data_color(
     columns = "diff_yield",
     method  = "numeric",
     palette = "YlGn"
   ) %>% 
+  cols_align(align = "center") %>% 
   tab_spanner(
-    label = md("**Dividendos**"),
+    label = md("**Dividendos por ação\n(Dividend Yield)**"),
     columns = c(first_yield, last_yield)
   ) %>% 
   tab_header(
@@ -152,6 +171,17 @@ gtsave(gt_table,
        filename = "maiores_yields.png")
 
 
-
-
-
+df %>%
+  hchart(
+    "scatter",
+    hcaes(stock_price, yield, group = as.integer(date))
+  )
+  
+  
+  
+  
+  
+  
+  
+  
+  
