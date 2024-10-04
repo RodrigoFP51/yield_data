@@ -3,7 +3,6 @@ library(tidyquant)
 library(rvest)
 library(here)
 library(gt)
-library(highcharter)
 
 if(!dir.exists("data")) dir.create("data")
 
@@ -35,15 +34,16 @@ get_yearly_yield <- function(tickers, from = Sys.Date() - 30,
   )
   
   dividends <- 
-    map(tickers,
-        .f = function(ticker){
-          safe_tq_get(
-            x = paste0(ticker, ".SA"),
-            get = "dividends",
-            from = from,
-            to = to
-          )
-        }
+    map(
+      tickers,
+      .f = function(ticker){
+        safe_tq_get(
+          x = paste0(ticker, ".SA"),
+          get = "dividends",
+          from = from,
+          to = to
+        )
+      }, .progress = TRUE
     ) %>% 
     map("result") %>% 
     compact() %>% 
@@ -88,25 +88,17 @@ df <-
   read_csv("data/yield_data.csv")
 
 high_pay_tickers <- df %>% 
-  group_by(symbol) %>%
-  # filter out tickers that sample is less than 3 years
+  group_by(symbol) %>% 
+  # Filtra os papéis com mais de 2 anos de amostra
   filter(length(symbol) > 2) %>% 
-  reframe(
-    years_diff = last(date) - first(date),
-    diff_yield = yield - lag(yield, n = years_diff)
-  ) %>%  
-  ungroup() %>% 
-  drop_na() %>% 
-  slice_max(diff_yield, n = 20) %>% 
+  ungroup() %>%
+  # Filtra para a data maxima da amostra (2024)
+  filter(date == max(date)) %>% 
+  # Seleciona os tickers com maiores yields
+  slice_max(yield, n = 20) %>% 
+  # Extrai somente os nomes dos ticker em formato de vetor
   pull(symbol)
 
-df %>%
-  filter(symbol %in% high_pay_tickers) %>% 
-  mutate(symbol = fct_reorder(symbol, -yield)) %>%  
-  hchart(
-    "line",
-    hcaes(date, yield, group = symbol)
-  )
 
 gt_table <- df %>% 
   filter(symbol %in% high_pay_tickers) %>% 
@@ -129,9 +121,9 @@ gt_table <- df %>%
   ) %>% 
   cols_label(
     symbol = "Ativo",
-    first_yield = "Primeiro",
-    last_yield = "Último",
-    diff_yield = "Diferença"
+    first_yield = "Primeiro Ano",
+    last_yield = "Último Ano",
+    diff_yield = "Variação"
   ) %>% 
   fmt_percent(
     columns = ends_with("_yield"),
@@ -162,7 +154,7 @@ gt_table <- df %>%
     columns = c(first_yield, last_yield)
   ) %>% 
   tab_header(
-    title = "Maiores pagadores de dividendos",
+    title = "Papéis da B3 que o rendimento mais cresceu (yield)",
     subtitle = "Considerando apenas ativos com mais de 2 anos de amostra"
   ) %>% 
   tab_footnote("Fonte: B3 API")
@@ -170,14 +162,12 @@ gt_table <- df %>%
 gtsave(gt_table,
        filename = "maiores_yields.png")
 
-
 df %>%
-  hchart(
-    "scatter",
-    hcaes(stock_price, yield, group = as.integer(date))
-  )
-  
-  
+  filter(symbol %in% high_pay_tickers[1:5]) %>% 
+  mutate(symbol = fct_reorder(symbol, -yield)) %>% 
+  ggplot(aes(date, yield, color = symbol)) +
+  geom_line()
+
   
   
   
